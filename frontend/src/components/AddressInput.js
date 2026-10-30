@@ -1,0 +1,65 @@
+'use client';
+/**
+ * Campo de dirección con desplegable de sugerencias (Google Places API New).
+ * Al elegir una sugerencia se devuelven dirección exacta + coordenadas.
+ */
+import { useEffect, useRef, useState } from 'react';
+import { loadMaps } from '@/lib/maps';
+import { appConfig } from '@/config/brand.config';
+
+export default function AddressInput({ value, onTyping, onPick, picked }) {
+  const [options, setOptions] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [mapsError, setMapsError] = useState('');
+  const tokenRef = useRef(null);
+  const timer = useRef();
+
+  // Cada vez que se escribe (y no se ha elegido ya una opción) se piden sugerencias.
+  useEffect(() => {
+    clearTimeout(timer.current);
+    if (picked || !value || value.trim().length < 4) { setOptions([]); return; }
+    timer.current = setTimeout(async () => {
+      try {
+        const maps = await loadMaps();
+        const { AutocompleteSuggestion, AutocompleteSessionToken } = await maps.importLibrary('places');
+        tokenRef.current ??= new AutocompleteSessionToken(); // agrupa la sesión (más barato)
+        const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+          input: value, sessionToken: tokenRef.current,
+          includedRegionCodes: [appConfig.maps.country], language: 'es',
+        });
+        setOptions(suggestions.map((s) => s.placePrediction));
+        setOpen(true);
+      } catch (e) { setMapsError(e.message); }
+    }, 300); // espera 300 ms tras dejar de escribir
+    return () => clearTimeout(timer.current);
+  }, [value, picked]);
+
+  const choose = async (prediction) => {
+    const place = prediction.toPlace();
+    await place.fetchFields({ fields: ['formattedAddress', 'location', 'id'] });
+    tokenRef.current = null; // la sesión termina al elegir
+    setOpen(false);
+    onPick({ address: place.formattedAddress, lat: place.location.lat(), lng: place.location.lng(), place_id: place.id });
+  };
+
+  return (
+    <div className="relative">
+      <input className="input" value={value} onChange={(e) => onTyping(e.target.value)} placeholder="Calle, número, ciudad"
+        autoComplete="off" required onFocus={() => options.length && setOpen(true)} />
+      {picked && <p className="mt-1 text-xs text-emerald-600">✔ Dirección verificada en el mapa</p>}
+      {!picked && value && <p className="mt-1 text-xs text-amber-600">Elige una dirección de la lista para ubicarla en el mapa.</p>}
+      {mapsError && <p className="mt-1 text-xs text-red-600">{mapsError}</p>}
+      {open && options.length > 0 && (
+        <ul className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-xl border bg-white shadow-lg">
+          {options.map((p) => (
+            <li key={p.placeId}>
+              <button type="button" onClick={() => choose(p)} className="block w-full px-3 py-3 text-left text-sm hover:bg-gray-50">
+                📍 {p.text.text}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
