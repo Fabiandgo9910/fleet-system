@@ -1,7 +1,7 @@
 'use client';
 /**
  * UTILIDADES DE GOOGLE MAPS
- *  - loadMaps()        carga Google Maps una sola vez
+ *  - loadMaps()        carga el script de Google una sola vez
  *  - buildRouteUrl()   URL de Google Maps con la ruta para varios servicios
  */
 import { appConfig } from '@/config/brand.config';
@@ -37,34 +37,37 @@ function km(a, b) {
 }
 
 /**
- * Ordena los servicios por "vecino más cercano" partiendo de la posición del
- * conductor (si se conoce) y devuelve la URL de Google Maps con la ruta.
+ * Construye la URL de Google Maps con la ruta.
+ *  - Ordena las paradas por "vecino más cercano" desde la posición del conductor.
+ *  - Si se pasa `warehouse`, el almacén es la PRIMERA parada (se recogen las
+ *    baterías allí) y el orden de los servicios se calcula desde el almacén.
  * Google admite hasta 9 paradas intermedias en este formato de enlace.
  */
-export function buildRouteUrl(services, origin) {
-  const withCoords = services.filter((s) => s.lat != null && s.lng != null);
-  let pending = [...withCoords];
+export function buildRouteUrl(services, origin = null, warehouse = null) {
+  let pending = services.filter((s) => s.lat != null && s.lng != null);
   const ordered = [];
   let current = origin;
+  if (warehouse) { ordered.push(warehouse); current = warehouse; }
   while (pending.length) {
-    if (!current) { current = pending[0]; ordered.push(pending.shift()); continue; }
+    if (!current) { current = pending.shift(); ordered.push(current); continue; }
     pending.sort((a, b) => km(current, a) - km(current, b));
     current = pending.shift();
     ordered.push(current);
   }
   const point = (s) => `${s.lat},${s.lng}`;
-  const last = ordered[ordered.length - 1];
-  const params = new URLSearchParams({ api: '1', travelmode: 'driving', destination: point(last) });
+  const params = new URLSearchParams({ api: '1', travelmode: 'driving', destination: point(ordered[ordered.length - 1]) });
   if (origin) params.set('origin', `${origin.lat},${origin.lng}`);
   const middle = ordered.slice(0, -1).slice(0, 9);
   if (middle.length) params.set('waypoints', middle.map(point).join('|'));
   return `https://www.google.com/maps/dir/?${params}`;
 }
 
-/** Enlace a una sola dirección. */
-export const singleRouteUrl = (s) =>
-  `https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${
+/** Enlace a un solo servicio (con o sin paso por el almacén). */
+export function singleRouteUrl(s, warehouse = null, origin = null) {
+  if (warehouse && s.lat != null) return buildRouteUrl([s], origin, warehouse);
+  return `https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=${
     s.lat != null ? `${s.lat},${s.lng}` : encodeURIComponent(s.address)}`;
+}
 
 /** Pide la ubicación actual (puede fallar si el usuario no da permiso). */
 export const getPosition = () =>

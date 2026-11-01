@@ -13,6 +13,8 @@ import drivers from './routes/drivers.js';
 import users from './routes/users.js';
 import reports from './routes/reports.js';
 import notifications from './routes/notifications.js';
+import clients from './routes/clients.js';
+import settings from './routes/settings.js';
 
 export function createApp() {
   const app = express();
@@ -37,6 +39,8 @@ export function createApp() {
   app.use('/api/users', users);
   app.use('/api/reports', reports);
   app.use('/api/notifications', notifications);
+  app.use('/api/clients', clients);
+  app.use('/api/settings', settings);
 
   app.use((_req, res) => res.status(404).json({ error: 'Ruta no encontrada.' }));
   app.use(errorHandler);

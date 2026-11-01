@@ -23,7 +23,11 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     // El color de marca se inyecta como variable CSS: todo el diseño lo usa.
-    <html lang={brand.locale.split('-')[0]} style={{ '--brand': brand.primaryColor }}>
+    <html lang={brand.locale.split('-')[0]} style={{ '--brand': brand.primaryColor }} suppressHydrationWarning>
+      <head>
+        {/* Aplica el tema guardado antes de pintar (evita el parpadeo claro/oscuro). */}
+        <script dangerouslySetInnerHTML={{ __html: "try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch(e){}" }} />
+      </head>
       <body><Providers>{children}</Providers></body>
     </html>
   );

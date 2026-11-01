@@ -66,11 +66,14 @@ create table services (
   finished_at          timestamptz,
   review_sent_at       timestamptz,                            -- reseña enviada por WhatsApp
   review_attempts      integer not null default 0,
-  review_error         text
+  review_error         text,
+  fail_reason          text                                    -- motivo si finaliza fallido
 );
 create index services_status_idx  on services(status);
 create index services_driver_idx  on services(driver_id);
 create index services_created_idx on services(created_at desc);
+create index services_client_idx  on services(client_id);
+create index services_plate_idx   on services(plate);
 create index services_review_idx  on services(finished_at)
   where status = 'finished_ok' and review_sent_at is null;
 
@@ -90,6 +93,25 @@ create table cash_settlements (            -- cada vez que el conductor entrega 
   amount     numeric(10,2) not null,
   created_by uuid references profiles(id),
   created_at timestamptz not null default now()
+);
+
+-- ---------- Historial de eventos de cada servicio ----------
+create table service_events (
+  id             uuid primary key default gen_random_uuid(),
+  service_id     uuid not null references services(id) on delete cascade,
+  type           text not null,
+  user_id        uuid references profiles(id),
+  target_user_id uuid references profiles(id),
+  note           text,
+  created_at     timestamptz not null default now()
+);
+create index service_events_service_idx on service_events(service_id, created_at);
+
+-- ---------- Ajustes de la empresa (almacén, etc.) ----------
+create table settings (
+  key        text primary key,
+  value      jsonb not null,
+  updated_at timestamptz not null default now()
 );
 
 -- ---------- Notificaciones ----------
@@ -125,6 +147,8 @@ alter table stock_movements    enable row level security;
 alter table cash_settlements   enable row level security;
 alter table notifications      enable row level security;
 alter table push_subscriptions enable row level security;
+alter table service_events     enable row level security;
+alter table settings           enable row level security;
 
 -- =====================================================================
 --  FUNCIONES ATÓMICAS (se ejecutan en una sola transacción)
@@ -132,7 +156,8 @@ alter table push_subscriptions enable row level security;
 
 -- Cierra un servicio y actualiza stock/efectivo/baterías viejas del conductor.
 create or replace function finish_service(
-  p_service_id uuid, p_success boolean, p_cash numeric, p_card numeric, p_old boolean
+  p_service_id uuid, p_success boolean, p_cash numeric, p_card numeric, p_old boolean,
+  p_note text default null
 ) returns services language plpgsql as $$
 declare s services;
 begin
@@ -146,6 +171,7 @@ begin
     paid_cash            = case when p_success then p_cash else 0 end,
     paid_card            = case when p_success then p_card else 0 end,
     old_battery_received = (p_success and p_old),
+    fail_reason          = case when p_success then null else p_note end,
     finished_at          = now()
   where id = p_service_id returning * into s;
 

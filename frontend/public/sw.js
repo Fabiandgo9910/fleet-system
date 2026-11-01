@@ -6,7 +6,7 @@
  *  4) Recibe notificaciones push aunque la app esté cerrada.
  * Para forzar una actualización de caché, cambia VERSION.
  */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const STATIC_CACHE = `static-${VERSION}`;
 
 self.addEventListener('install', () => self.skipWaiting());
@@ -47,11 +47,16 @@ self.addEventListener('fetch', (e) => {
 });
 
 // ---- Notificaciones push ----
+// requireInteraction: se queda en pantalla hasta que el usuario la toque.
+// renotify + tag: si llegan varias seguidas, cada una vuelve a sonar/vibrar.
+// El sonido lo decide el sistema operativo (no se puede forzar un sonido propio).
 self.addEventListener('push', (e) => {
   const data = e.data ? e.data.json() : { title: 'Notificación', body: '' };
   e.waitUntil(self.registration.showNotification(data.title, {
     body: data.body, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png',
-    data: { url: data.url || '/' }, vibrate: [200, 100, 200],
+    data: { url: data.url || '/' },
+    tag: `${data.url || 'general'}-${Date.now()}`, renotify: true, requireInteraction: true,
+    vibrate: [300, 120, 300, 120, 300, 200, 700], silent: false,
   }));
 });
 

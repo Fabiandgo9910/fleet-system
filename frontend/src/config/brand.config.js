@@ -10,7 +10,7 @@ export const brand = {
   shortName: process.env.NEXT_PUBLIC_COMPANY_SHORT_NAME || 'MiEmpresa',
   description: process.env.NEXT_PUBLIC_COMPANY_DESCRIPTION || 'Gestión de servicios y flota',
   logoUrl: process.env.NEXT_PUBLIC_LOGO_URL || '/icons/icon-192.png', // ruta en /public o URL
-  primaryColor: process.env.NEXT_PUBLIC_PRIMARY_COLOR || '#2563eb',
+  primaryColor: process.env.NEXT_PUBLIC_PRIMARY_COLOR || '#e2590c',
   locale: process.env.NEXT_PUBLIC_LOCALE || 'es-ES',
   currency: process.env.NEXT_PUBLIC_CURRENCY || 'EUR',
 };

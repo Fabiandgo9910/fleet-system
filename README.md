@@ -153,3 +153,24 @@ Flujo recomendado: **un proyecto Supabase + un backend Render + un frontend Verc
 - No hay seguimiento GPS en vivo de conductores (solo ubicación de servicios).
 - El código está en JavaScript con comentarios; migrar a TypeScript es directo si el equipo lo prefiere.
 - Antes de producción: prueba el flujo completo con 2 móviles, revisa los límites vigentes de cada plan gratuito y activa copias de seguridad en Supabase.
+
+## 8. Novedades de la versión 2
+
+- **Historial** (`/history`): pestaña *Servicios* (todos, con filtros por rango de fechas, matrícula, cliente, estado y conductor) y pestaña *Clientes* (datos del cliente, batería montada, importe cobrado y fecha de cada servicio).
+- **Servicios** (`/`) ahora muestra solo la operación diaria (activos) con indicadores.
+- **Formularios** con validación por campo, mensajes de error claros y confirmaciones.
+- **Rechazar servicio** (conductor, con nota obligatoria) y **fallido con motivo obligatorio**. Cada servicio tiene un historial de eventos.
+- **Reasignación:** el conductor nuevo recibe «Nuevo servicio asignado» y el anterior «Servicio desasignado». El admin también puede *Quitar asignación*.
+- **Almacén** (`/settings`): el conductor activa «Pasar por almacén» y la ruta empieza allí.
+- **Notificaciones** con sonido de campana de 3 toques que se apaga despacio, vibración intensa y aviso persistente con la app cerrada.
+- **Diseño** corporativo con tema claro/oscuro, iconos propios y barra lateral.
+
+## 9. Cómo actualizar una instalación ya desplegada
+
+1. **Base de datos (primero):** Supabase → SQL Editor → pega `database/migration_v2.sql` → Run.
+2. **Código:** en tu repositorio local reemplaza estas carpetas/archivos por los de la v2 (mantén tus `.env`):
+   `backend/src/`, `frontend/src/`, `frontend/public/` y añade `database/migration_v2.sql`.
+3. `git add . && git commit -m "v2" && git push`. Render y Vercel redespliegan solos.
+4. Cierra y vuelve a abrir la PWA en cada móvil (el service worker pasa a `v2`).
+5. Cada dispositivo debe pulsar una vez el sonido/avisos (campana → *Probar sonido*) para desbloquear el audio.
+No hay variables de entorno nuevas ni dependencias nuevas.

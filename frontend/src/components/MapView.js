@@ -7,9 +7,8 @@ import { appConfig } from '@/config/brand.config';
 import { STATUS } from '@/lib/format';
 import { Skeleton } from './ui';
 
-const PIN_COLORS = { created: '#6b7280', assigned: '#f59e0b', accepted: '#2563eb', finished_ok: '#059669', finished_failed: '#dc2626', cancelled: '#a1a1aa' };
 
-export default function MapView({ services }) {
+export default function MapView({ services, warehouse }) {
   const router = useRouter();
   const el = useRef(null);
   const state = useRef({}); // { map, info, markers, lib }
@@ -44,7 +43,7 @@ export default function MapView({ services }) {
     const bounds = new window.google.maps.LatLngBounds();
 
     services.filter((s) => s.lat != null).forEach((s) => {
-      const pin = new marker.PinElement({ background: PIN_COLORS[s.status], borderColor: '#fff', glyphColor: '#fff', glyph: String(s.code) });
+      const pin = new marker.PinElement({ background: STATUS[s.status].hex, borderColor: '#fff', glyphColor: '#fff', glyph: String(s.code) });
       const m = new marker.AdvancedMarkerElement({ map, position: { lat: s.lat, lng: s.lng }, content: pin.element, title: s.address });
       m.addListener('gmp-click', () => {
         // Contenido creado con textContent: evita inyección de HTML.
@@ -62,12 +61,19 @@ export default function MapView({ services }) {
       state.current.markers.push(m);
       bounds.extend({ lat: s.lat, lng: s.lng });
     });
+    // Almacén: marcador oscuro con glifo propio.
+    if (warehouse) {
+      const pin = new marker.PinElement({ background: '#0f1b2d', borderColor: '#fff', glyphColor: '#fff', glyph: 'A' });
+      const m = new marker.AdvancedMarkerElement({ map, position: { lat: warehouse.lat, lng: warehouse.lng }, content: pin.element, title: `Almacén: ${warehouse.address}` });
+      state.current.markers.push(m);
+      bounds.extend({ lat: warehouse.lat, lng: warehouse.lng });
+    }
     if (state.current.markers.length) map.fitBounds(bounds, 60);
     if (state.current.markers.length === 1) map.setZoom(15);
-  }, [services, ready, router]);
+  }, [services, warehouse, ready, router]);
 
   return (
-    <div className="relative h-[calc(100dvh-15rem)] min-h-80 overflow-hidden rounded-2xl border bg-gray-100">
+    <div className="relative h-[calc(100dvh-16rem)] min-h-80 overflow-hidden rounded-xl border border-line bg-sunken">
       {!ready && !error && <Skeleton className="absolute inset-0 !rounded-none" />}
       {error && <p className="p-4 text-sm text-red-600">{error}</p>}
       <div ref={el} className="h-full w-full" />

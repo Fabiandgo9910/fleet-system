@@ -1,53 +1,110 @@
 @import "tailwindcss";
 
-/* Diseño neutro: todo el color de marca sale de la variable --brand,
-   que se inyecta desde brand.config.js (ver layout.js). */
-@theme inline {
-  --color-brand: var(--brand);
-  --color-brand-soft: color-mix(in srgb, var(--brand) 12%, white);
+/* Modo oscuro: se activa con data-theme="dark" en <html>. */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* ------------------------------------------------------------------
+   SISTEMA DE DISEÑO
+   Todo el color sale de variables: el color de marca (--brand) llega
+   desde brand.config.js y el resto cambia con el tema claro/oscuro.
+------------------------------------------------------------------- */
+:root {
+  --brand: #e2590c;
+  --c-page: #eef1f5;
+  --c-surface: #ffffff;
+  --c-sunken: #f5f7fa;
+  --c-line: #e1e6ed;
+  --c-ink: #0f1b2d;
+  --c-muted: #5b6a7e;
+  --c-faint: #8a97a8;
+  --c-nav: #0a1424;
+}
+[data-theme="dark"] {
+  --c-page: #0b1422;
+  --c-surface: #111e31;
+  --c-sunken: #0d1828;
+  --c-line: #223149;
+  --c-ink: #e8edf4;
+  --c-muted: #9aa8bc;
+  --c-faint: #6b7a90;
+  --c-nav: #070e1a;
 }
 
-:root { --brand: #2563eb; }
+@theme inline {
+  --color-brand: var(--brand);
+  --color-brand-soft: color-mix(in srgb, var(--brand) 12%, var(--c-surface));
+  --color-page: var(--c-page);
+  --color-surface: var(--c-surface);
+  --color-sunken: var(--c-sunken);
+  --color-line: var(--c-line);
+  --color-ink: var(--c-ink);
+  --color-muted: var(--c-muted);
+  --color-faint: var(--c-faint);
+  --color-nav: var(--c-nav);
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
 
 html, body { height: 100%; }
 body {
-  background: #f6f7f9;
-  color: #111827;
+  background: var(--c-page);
+  color: var(--c-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
 }
+::selection { background: color-mix(in srgb, var(--brand) 25%, transparent); }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
-/* Componentes reutilizables: mantienen el código de las pantallas limpio. */
-/* Componentes reutilizables (Tailwind v4: @utility). */
+/* ---------------- Componentes reutilizables (Tailwind v4: @utility) ---------------- */
 @utility card {
-  @apply rounded-2xl border border-gray-200 bg-white p-4 shadow-sm;
+  @apply rounded-xl border border-line bg-surface p-4 shadow-[0_1px_2px_rgba(15,27,45,.04)];
 }
-  @utility input {
-  @apply w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base outline-none focus:border-brand focus:ring-2 focus:ring-brand/20;
+@utility field {
+  @apply w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-[15px] text-ink outline-none transition placeholder:text-faint focus:border-brand focus:ring-2 focus:ring-brand/20;
 }
-  @utility label {
-  @apply mb-1 block text-sm font-medium text-gray-700;
+@utility field-error {
+  @apply border-red-500 focus:border-red-500 focus:ring-red-500/20;
 }
-  @utility btn {
-  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[.98] disabled:opacity-50;
+@utility label {
+  @apply mb-1.5 block text-[13px] font-medium text-muted;
 }
-  @utility btn-primary {
-  @apply btn bg-brand text-white hover:brightness-110;
+@utility btn {
+  @apply inline-flex min-h-10 select-none items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50;
 }
-  @utility btn-ghost {
-  @apply btn border border-gray-300 bg-white text-gray-800 hover:bg-gray-50;
+@utility btn-primary {
+  @apply btn bg-brand text-white shadow-sm hover:brightness-110;
 }
-  @utility btn-danger {
+@utility btn-ghost {
+  @apply btn border border-line bg-surface text-ink hover:bg-sunken;
+}
+@utility btn-danger {
   @apply btn bg-red-600 text-white hover:bg-red-700;
 }
-  @utility btn-success {
+@utility btn-success {
   @apply btn bg-emerald-600 text-white hover:bg-emerald-700;
+}
+@utility btn-soft-danger {
+  @apply btn border border-red-500/30 bg-red-500/10 text-red-600 hover:bg-red-500/15 dark:text-red-300;
+}
+@utility eyebrow {
+  @apply text-[11px] font-semibold uppercase tracking-[.08em] text-faint;
+}
+@utility th {
+  @apply px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[.06em] text-faint;
+}
+@utility td {
+  @apply px-3 py-3 text-sm;
 }
 
 @keyframes shimmer { 100% { transform: translateX(100%); } }
-.skeleton { position: relative; overflow: hidden; background: #e5e7eb; border-radius: 0.75rem; }
+.skeleton { position: relative; overflow: hidden; background: color-mix(in srgb, var(--c-faint) 22%, transparent); border-radius: 0.5rem; }
 .skeleton::after {
   content: ""; position: absolute; inset: 0; transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--c-surface) 70%, transparent), transparent);
   animation: shimmer 1.4s infinite;
 }
+@keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+.pop { animation: pop .18s ease-out; }
+@keyframes ring { 0%,100% { transform: rotate(0); } 15% { transform: rotate(14deg); } 30% { transform: rotate(-12deg); } 45% { transform: rotate(8deg); } 60% { transform: rotate(-6deg); } }
+.ring-bell { animation: ring 1s ease-in-out 2; transform-origin: 50% 0; }
